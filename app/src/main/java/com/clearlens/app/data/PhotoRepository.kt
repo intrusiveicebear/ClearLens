@@ -137,19 +137,22 @@ class PhotoRepository(private val context: Context) {
         return groups
     }
 
-    private fun hashContent(photo: PhotoItem): String? = try {
-        val digest = MessageDigest.getInstance("SHA-256")
-        resolver.openInputStream(photo.uri)?.use { stream ->
-            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
-            while (true) {
-                val count = stream.read(buffer)
-                if (count <= 0) break
-                digest.update(buffer, 0, count)
+    private fun hashContent(photo: PhotoItem): String? {
+        return try {
+            val digest = MessageDigest.getInstance("SHA-256")
+            val stream = resolver.openInputStream(photo.uri) ?: return null
+            stream.use {
+                val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                while (true) {
+                    val count = it.read(buffer)
+                    if (count <= 0) break
+                    digest.update(buffer, 0, count)
+                }
             }
-        } ?: return null
-        digest.digest().joinToString("") { "%02x".format(it) }
-    } catch (_: Exception) {
-        null
+            digest.digest().joinToString("") { "%02x".format(it) }
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun findSimilar(photos: List<PhotoItem>): List<FindingGroup> {
